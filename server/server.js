@@ -1,6 +1,8 @@
 const express = require("express");
 const nodemailer = require("nodemailer");
 const cors = require("cors");
+const fs = require("fs");
+const path = require("path");
 require("dotenv").config();
 
 const app = express();
@@ -21,12 +23,32 @@ app.get("/", (req, res) => {
   res.send("Server is working");
 });
 
+// ✅ LOG MESSAGE TO CSV
+const csvFilePath = path.join(__dirname, "messages.csv");
+
+const logMessageToCSV = (name, email, message) => {
+  const timestamp = new Date().toISOString();
+  const csvRow = `"${timestamp}","${name}","${email}","${message.replace(/"/g, '""')}"\n`;
+
+  // Create CSV with headers if it doesn't exist
+  if (!fs.existsSync(csvFilePath)) {
+    const headers = `"Timestamp","Name","Email","Message"\n`;
+    fs.writeFileSync(csvFilePath, headers);
+  }
+
+  // Append the message to CSV
+  fs.appendFileSync(csvFilePath, csvRow);
+};
+
 // ✅ SEND EMAIL ROUTE
 app.post("/send-email", async (req, res) => {
   try {
     const { name, email, message } = req.body;
 
     console.log("Received:", req.body); // DEBUG
+
+    // ✅ Log message to CSV file
+    logMessageToCSV(name, email, message);
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -59,6 +81,15 @@ Message: ${message}
   } catch (error) {
     console.log("EMAIL ERROR:", error);
     res.status(500).json({ error: "Failed to send email" });
+  }
+});
+
+// ✅ GET MESSAGES CSV ROUTE
+app.get("/messages-csv", (req, res) => {
+  if (fs.existsSync(csvFilePath)) {
+    res.download(csvFilePath, "messages.csv");
+  } else {
+    res.status(404).json({ error: "No messages logged yet" });
   }
 });
 
