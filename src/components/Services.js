@@ -70,7 +70,7 @@ export default function ServicesSection() {
               alt="Professional Services"
               className="absolute inset-0 w-full h-full object-cover"
               loading="eager"
-              fetchPriority="high"
+              fetchpriority="high"
             />
           </div>
         </motion.div>
